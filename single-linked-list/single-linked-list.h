@@ -154,7 +154,7 @@ class SingleLinkedList {
         }
 
         if (this->size_ == other.size_) {
-            return !ForAnyWith(other, [](const Type& val, const Type& val_other) -> bool {
+            return !IsSuccessForAnyCrossItems(other, [](const Type& val, const Type& val_other) -> bool {
                 return val >= val_other;
             });
         }
@@ -168,7 +168,7 @@ class SingleLinkedList {
         }
 
         if (this->size_ == other.size_) {
-            return !ForAnyWith(other, [](const Type& val, const Type& val_other) -> bool {
+            return !IsSuccessForAnyCrossItems(other, [](const Type& val, const Type& val_other) -> bool {
                 return val > val_other;
             });
         }
@@ -184,16 +184,11 @@ class SingleLinkedList {
         return !(*this < other);
     }
 
-    // Обменивает содержимое списков за время O(1)
+    //! Тренажер требует наличия в интерфейсе класса функции с наименованием !swap
+    /// Обменивает содержимое списков за время O(1)
     void swap(SingleLinkedList& other) noexcept {
-        Node* tmp_next_node_ptr = this->head_.next_node;
-        size_t tmp_size = this->size_;
-
-        this->head_.next_node = other.head_.next_node;
-        this->size_ = other.size_;
-
-        other.head_.next_node = tmp_next_node_ptr;
-        other.size_ = tmp_size;
+        std::swap(head_.next_node, other.head_.next_node);
+        std::swap(size_, other.size_);
     }
 
     // Возвращает итератор, указывающий на позицию перед первым элементом односвязного списка.
@@ -220,6 +215,8 @@ class SingleLinkedList {
      * Если при создании элемента будет выброшено исключение, список останется в прежнем состоянии
      */
     Iterator InsertAfter(ConstIterator pos, const Type& value) {
+        assert(pos.node_ != nullptr);
+
         auto new_node = new Node(value, pos.node_->next_node);
         pos.node_->next_node = new_node;
         ++size_;
@@ -227,13 +224,13 @@ class SingleLinkedList {
     }
 
     void PopFront() noexcept {
-        if (size_ == 0) {
-            return;
-        }
+        assert(size_ > 0);
+
         auto front_node_it = head_.next_node;
         head_.next_node = front_node_it->next_node;
 
         delete front_node_it;
+        --size_;
     }
 
     /*
@@ -241,9 +238,9 @@ class SingleLinkedList {
      * Возвращает итератор на элемент, следующий за удалённым
      */
     Iterator EraseAfter(ConstIterator pos) noexcept {
-        if (pos.node_->next_node == nullptr) {
-            return end();
-        }
+        assert((pos.node_->next_node != nullptr));
+        assert((size_ > 0));
+
         auto erased_node = pos.node_->next_node;
         pos.node_->next_node = erased_node->next_node;
         delete erased_node;
@@ -260,13 +257,10 @@ class SingleLinkedList {
         if (this->size_ != other.size_) {
             return false;
         }
-        if (this == &other || &this->head_ == &other.head_) {
-            return true;
-        }
-        return false;
+        return this == &other || &this->head_ == &other.head_;
     }
 
-    bool ForAnyWith(const SingleLinkedList& other, function<bool(const Type&, const Type&)> predicate) const {
+    bool IsSuccessForAnyCrossItems(const SingleLinkedList& other, function<bool(const Type&, const Type&)> predicate) const {
         for (auto ptr = this->begin(), ptr_other = other.begin(); ptr != this->end() && ptr_other != other.end(); ++ptr, ++ptr_other) {
             if (predicate(*ptr, *ptr_other)) {
                 return true;
@@ -345,6 +339,7 @@ class SingleLinkedList<Type>::BasicIterator {
     // Возвращает ссылку на самого себя
     // Инкремент итератора, не указывающего на существующий элемент списка, приводит к неопределённому поведению
     BasicIterator& operator++() noexcept {
+        assert(node_ != nullptr);
         node_ = node_->next_node;
         return *this;
     }
@@ -363,6 +358,7 @@ class SingleLinkedList<Type>::BasicIterator {
     // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
     // приводит к неопределённому поведению
     [[nodiscard]] reference operator*() const noexcept {
+        assert(node_ != nullptr);
         return node_->value;
     }
 
@@ -370,6 +366,7 @@ class SingleLinkedList<Type>::BasicIterator {
     // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
     // приводит к неопределённому поведению
     [[nodiscard]] pointer operator->() const noexcept {
+        assert(node_ != nullptr);
         return &(node_->value);
     }
 
